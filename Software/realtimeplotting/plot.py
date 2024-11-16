@@ -5,6 +5,25 @@ from realtimeplotting.sensordata import SensorData
 import matplotlib.pyplot as plt
 
 
+DRAW_PAUSE = 1 / 50
+
+
+class RealTimePlot:
+    def __init__(self, sensorData: SensorData, numberOfRows: int):
+        plottingData = PlottingData(numberOfRows)
+
+        self.filler = PeriodicDataFiller(sensorData, plottingData)
+        self.plot = Plot(numberOfRows, plottingData)
+
+    def startFillingThread(self):
+        filling_thread = threading.Thread(target=self.filler.start)
+        filling_thread.start()
+        return filling_thread
+
+    def drawAndBlock(self):
+        self.plot.drawAndBlock()
+
+
 class PlottingData:
     def __init__(self, numberOfRows: int):
         self.lock = threading.Lock()
@@ -31,7 +50,7 @@ class Plot:
 
         self.plottingData = plottingData
 
-    def start(self):
+    def drawAndBlock(self):
         while True:
             with self.plottingData.lock:
                 if self.plottingData.stop:
@@ -49,30 +68,23 @@ class Plot:
                 self.ax.set_ylim(minY, maxY)
 
             plt.draw()
-            plt.pause(1 / 30)
-            time.sleep(1 / 30)
+            plt.pause(DRAW_PAUSE)
+            time.sleep(DRAW_PAUSE)
 
 
 class PeriodicDataFiller:
     def __init__(self, sensorData: SensorData, plottingData: PlottingData):
         self.plottingData = plottingData
-        self.latestData = sensorData
+        self.sensorData = sensorData
 
     def start(self):
         startTime = time.perf_counter()
         while True:
-            with self.latestData.lock:
-                if self.latestData.stop:
+            with self.sensorData.lock:
+                if self.sensorData.stop:
                     return
 
-                if self.latestData.accelData is None:
-                    continue
+                currentTime = time.perf_counter() - startTime
+                self.plottingData.add_reading(currentTime, self.sensorData.data)
 
-                with self.plottingData.lock:
-                    currentTime = time.perf_counter() - startTime
-                    self.plottingData.t.append(currentTime)
-                    self.plottingData.x.append(self.latestData.accelData.x)
-                    self.plottingData.y.append(self.latestData.accelData.y)
-                    self.plottingData.z.append(self.latestData.accelData.z)
-
-            time.sleep(1 / 50)
+            time.sleep(DRAW_PAUSE)
