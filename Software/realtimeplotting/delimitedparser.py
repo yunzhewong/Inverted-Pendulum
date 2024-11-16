@@ -1,7 +1,8 @@
 from typing import Callable
 import unittest
 
-class DelimitedParser():
+
+class DelimitedParser:
     def __init__(self, delimiter: str):
         self.delimiter_bytes = bytearray(delimiter.encode("utf-8"))
         self.data = bytearray([])
@@ -12,17 +13,17 @@ class DelimitedParser():
     def check(self, on_data: Callable[[bytearray], None]):
         indexes = []
         for i in range(len(self.data)):
-            if self.data[i: i+len(self.delimiter_bytes)] == self.delimiter_bytes:
+            if self.data[i : i + len(self.delimiter_bytes)] == self.delimiter_bytes:
                 indexes.append(i)
-        
+
         if len(indexes) == 0 or len(indexes) == 1:
             return
-        
+
         for i in range(len(indexes) - 1):
-            section = self.data[indexes[i] + len(self.delimiter_bytes): indexes[i+1]]
+            section = self.data[indexes[i] + len(self.delimiter_bytes) : indexes[i + 1]]
             on_data(section)
-        
-        self.data = self.data[indexes[-1]:]
+
+        self.data = self.data[indexes[-1] :]
 
 
 class TestDelimitedParser(unittest.TestCase):
@@ -30,6 +31,7 @@ class TestDelimitedParser(unittest.TestCase):
         parser = DelimitedParser("UU")
 
         output = []
+
         def callback(data):
             output.append(1)
 
@@ -43,9 +45,10 @@ class TestDelimitedParser(unittest.TestCase):
         parser = DelimitedParser("UU")
 
         output = []
+
         def callback(data):
             if data == bytearray("C".encode("utf-8")):
-              output.append(1)
+                output.append(1)
 
         parser.add_data("UUC".encode("utf-8"))
         parser.add_data("UU".encode("utf-8"))
@@ -57,15 +60,17 @@ class TestDelimitedParser(unittest.TestCase):
         parser = DelimitedParser("UU")
 
         output = []
+
         def callback(data):
             if data == bytearray("ABCD".encode("utf-8")):
-              output.append(1)
+                output.append(1)
 
         parser.add_data("UUABCD".encode("utf-8"))
         parser.add_data("UU".encode("utf-8"))
         parser.check(callback)
 
         self.assertEqual(len(output), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,34 +1,33 @@
 import threading
 import time
-from data import LatestSensorData
-from accel import AccelerometerMeasurement
+from typing import List
+from realtimeplotting.sensordata import SensorData
 import matplotlib.pyplot as plt
 
 
 class PlottingData:
-    def __init__(self):
+    def __init__(self, numberOfRows: int):
         self.lock = threading.Lock()
-        self.t = []
-        self.x = []
-        self.y = []
-        self.z = []
+        self.t: List[float] = []
+        self.data: List[List[float]] = [[] for _ in range(numberOfRows)]
         self.stop = False
 
-    def add_reading(self, time: float, accelData: AccelerometerMeasurement):
+    def add_reading(self, time: float, reading: List[float]):
         with self.lock:
             self.t.append(time)
-            self.x.append(accelData.x)
-            self.y.append(accelData.y)
-            self.z.append(accelData.z)
+
+            for index in range(len(reading)):
+                self.data[index].append(reading[index])
 
 
 class Plot:
-    def __init__(self, plottingData: PlottingData):
+    def __init__(self, numberOfRows: int, plottingData: PlottingData):
         self.fig, self.ax = plt.subplots()
+        self.lines: List[plt.Line2D] = []
 
-        (self.xline,) = self.ax.plot([], [], lw=1)
-        (self.yline,) = self.ax.plot([], [], lw=1)
-        (self.zline,) = self.ax.plot([], [], lw=1)
+        for _ in range(numberOfRows):
+            (line,) = self.ax.plot([], [], lw=1)
+            self.lines.append(line)
 
         self.plottingData = plottingData
 
@@ -39,17 +38,15 @@ class Plot:
                     return
 
                 t = self.plottingData.t
-                x = self.plottingData.x
-                y = self.plottingData.y
-                z = self.plottingData.z
-                self.xline.set_data(t, x)
-                self.yline.set_data(t, y)
-                self.zline.set_data(t, z)
+
+                for i in range(len(self.lines)):
+                    self.lines[i].set_data(t, self.plottingData.data[i])
 
                 self.ax.set_xlim(min(t), max(t))
-                self.ax.set_ylim(
-                    min(min(x), min(y), min(z)), max(max(x), max(y), max(z))
-                )
+
+                minY = min([min(data) for data in self.plottingData.data])
+                maxY = max([max(data) for data in self.plottingData.data])
+                self.ax.set_ylim(minY, maxY)
 
             plt.draw()
             plt.pause(1 / 30)
@@ -57,9 +54,9 @@ class Plot:
 
 
 class PeriodicDataFiller:
-    def __init__(self, latestData: LatestSensorData, plottingData: PlottingData):
+    def __init__(self, sensorData: SensorData, plottingData: PlottingData):
         self.plottingData = plottingData
-        self.latestData = latestData
+        self.latestData = sensorData
 
     def start(self):
         startTime = time.perf_counter()
