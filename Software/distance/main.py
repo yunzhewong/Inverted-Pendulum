@@ -38,12 +38,12 @@ if __name__ == "__main__":
 
     try:
         realTimePlot.drawAndBlock(sensorData, plottingData)
+    except KeyboardInterrupt:
+        pass
     except Exception as e:
         print(e)
+    finally:
         with sensorData.lock:
             sensorData.stop = True
-
     readingThread.join()
-    print("Reading back")
     fillingThread.join()
-    print("Filling Back")
