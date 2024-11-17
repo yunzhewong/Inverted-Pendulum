@@ -1,48 +1,50 @@
-from typing import Callable
+from typing import Callable, List
 import unittest
 
 
-class DelimitedParser:
+class DelimitedSectioner:
     def __init__(self, delimiter: str):
         self.delimiter_bytes = bytearray(delimiter.encode("utf-8"))
         self.data = bytearray([])
 
-    def add_data(self, data: bytes):
+    def addData(self, data: bytes):
         self.data += bytearray(data)
 
-    def check(self, on_data: Callable[[bytearray], None]):
+    def collapseSections(self):
         indexes = []
         for i in range(len(self.data)):
             if self.data[i : i + len(self.delimiter_bytes)] == self.delimiter_bytes:
                 indexes.append(i)
 
         if len(indexes) == 0 or len(indexes) == 1:
-            return
+            return []
 
+        sections = []
         for i in range(len(indexes) - 1):
-            section = self.data[indexes[i] + len(self.delimiter_bytes) : indexes[i + 1]]
-            on_data(section)
-
+            sections.append(
+                self.data[indexes[i] + len(self.delimiter_bytes) : indexes[i + 1]]
+            )
         self.data = self.data[indexes[-1] :]
+        return sections
 
 
-class TestDelimitedParser(unittest.TestCase):
+class TestDelimitedSectioner(unittest.TestCase):
     def test_single(self):
-        parser = DelimitedParser("UU")
+        parser = DelimitedSectioner("UU")
 
         output = []
 
         def callback(data):
             output.append(1)
 
-        parser.add_data("UUA".encode("utf-8"))
-        parser.add_data("UUB".encode("utf-8"))
+        parser.collapseSections("UUA".encode("utf-8"))
+        parser.collapseSections("UUB".encode("utf-8"))
         parser.check(callback)
 
         self.assertEqual(len(output), 1)
 
     def test_odd_spacing(self):
-        parser = DelimitedParser("UU")
+        parser = DelimitedSectioner("UU")
 
         output = []
 
@@ -50,14 +52,14 @@ class TestDelimitedParser(unittest.TestCase):
             if data == bytearray("C".encode("utf-8")):
                 output.append(1)
 
-        parser.add_data("UUC".encode("utf-8"))
-        parser.add_data("UU".encode("utf-8"))
+        parser.collapseSections("UUC".encode("utf-8"))
+        parser.collapseSections("UU".encode("utf-8"))
         parser.check(callback)
 
         self.assertEqual(len(output), 1)
 
     def test_even_spacing(self):
-        parser = DelimitedParser("UU")
+        parser = DelimitedSectioner("UU")
 
         output = []
 
@@ -65,8 +67,8 @@ class TestDelimitedParser(unittest.TestCase):
             if data == bytearray("ABCD".encode("utf-8")):
                 output.append(1)
 
-        parser.add_data("UUABCD".encode("utf-8"))
-        parser.add_data("UU".encode("utf-8"))
+        parser.collapseSections("UUABCD".encode("utf-8"))
+        parser.collapseSections("UU".encode("utf-8"))
         parser.check(callback)
 
         self.assertEqual(len(output), 1)

@@ -1,8 +1,8 @@
 import struct
 
-from realtimeplotting.plot import RealTimePlot
+from realtimeplotting.plot import PlotFiller
 from realtimeplotting.read import SerialReader
-from realtimeplotting.sensordata import SensorData
+from realtimeplotting.sensordata import ThreadSharedSensorData
 
 
 def parse_float(bytes: bytearray):
@@ -20,10 +20,10 @@ def parse_accelerometer(data: bytearray):
 
 
 if __name__ == "__main__":
-    latestSensorData = SensorData()
+    latestSensorData = ThreadSharedSensorData()
 
     serialReader = SerialReader(latestSensorData, parse_accelerometer)
-    realTimePlot = RealTimePlot(latestSensorData, 3)
+    realTimePlot = PlotFiller(latestSensorData, 3)
 
     serialReader.startReadingThread()
     realTimePlot.startFillingThread()
