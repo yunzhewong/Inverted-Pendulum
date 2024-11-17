@@ -1,6 +1,7 @@
 import struct
 
 import serial
+import parseBytes
 
 from realtimeplotting.plot import (
     RealTimePlot,
@@ -11,17 +12,13 @@ from realtimeplotting.read import createReadingThread
 from realtimeplotting.sensordata import ThreadSharedSensorData
 
 
-def parse_float(bytes: bytearray):
-    return struct.unpack("f", bytes)[0]
-
-
 def parse_gyroscope(data: bytearray):
     if len(data) != 12:
         return None
 
-    rollRate = parse_float(data[0:4])
-    pitchRate = parse_float(data[4:8])
-    yawRate = parse_float(data[8:12])
+    rollRate = parseBytes.float(data[0:4])
+    pitchRate = parseBytes.float(data[4:8])
+    yawRate = parseBytes.float(data[8:12])
 
     return [rollRate, pitchRate, yawRate]
 

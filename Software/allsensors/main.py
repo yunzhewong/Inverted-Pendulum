@@ -2,6 +2,7 @@ import struct
 
 import serial
 
+import parseBytes
 from realtimeplotting.plot import (
     RealTimePlot,
     ThreadSharedPlottingData,
@@ -11,23 +12,15 @@ from realtimeplotting.read import createReadingThread
 from realtimeplotting.sensordata import ThreadSharedSensorData
 
 
-def parseFloat(bytes: bytearray):
-    return struct.unpack("f", bytes)[0]
-
-
-def parseInt16(bytes: bytearray):
-    return struct.unpack("<h", bytes)[0]
-
-
 def parse_all(data: bytearray):
     if len(data) != (2 + 12):
         return None
 
     return [
-        parseInt16(data[0:2]),
-        parseFloat(data[2:6]),
-        parseFloat(data[6:10]),
-        parseFloat(data[10:14]),
+        parseBytes.int16(data[0:2]),
+        parseBytes.float(data[2:6]),
+        parseBytes.float(data[6:10]),
+        parseBytes.float(data[10:14]),
     ]
 
 
